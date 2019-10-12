@@ -86,11 +86,11 @@ bool SimpleLRU::Get(const std::string &key, std::string &value) {
 
 void SimpleLRU::AddNewNode(const std::string &key, const std::string &value) {
   // Allocate new node
-  std::unique_ptr<lru_node> new_node =
-    std::unique_ptr<lru_node>(new lru_node{std::move(key), std::move(value), _lru_tail->prev, nullptr});
+  lru_node *new_node =
+    new lru_node{std::move(key), std::move(value), _lru_tail->prev, nullptr};
 
   // Setup pointers for swap
-  std::swap(new_node->next, new_node);
+  new_node->next = std::unique_ptr<lru_node>(new_node);
 
   // Swap *next pointer of
   // _lru_tail->prev->next i.e. pointer to dummy tail
@@ -98,7 +98,7 @@ void SimpleLRU::AddNewNode(const std::string &key, const std::string &value) {
   // thus new_node->next now points to dummy tail (as it is new real tail)
   // and _lru_tail->prev->next (i.e. second to last node) now points to real tail
   std::swap(_lru_tail->prev->next, new_node->next);
-  _lru_tail->prev = new_node.get();
+  _lru_tail->prev = new_node;
 
   _cur_size += key.size() + value.size();
   _lru_index.insert({_lru_tail->key, *_lru_tail});
