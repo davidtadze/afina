@@ -14,7 +14,7 @@ bool SimpleLRU::Put(const std::string &key, const std::string &value) {
   auto node_iterator = _lru_index.find(key);
 
   // Key exists in List
-  // Change corresponding node value and make it the most "fresh"
+  // Change corresponding node value and make it the "freshest"
   if (node_iterator != _lru_index.end()) {
     node_iterator->second.get().value = value;
     MoveToTail(node_iterator);
@@ -41,7 +41,9 @@ bool SimpleLRU::PutIfAbsent(const std::string &key, const std::string &value) {
 // See MapBasedGlobalLockImpl.h
 bool SimpleLRU::Set(const std::string &key, const std::string &value) {
   auto node_iterator = _lru_index.find(key);
-  if(node_iterator != _lru_index.end())
+
+  // Key doesnt exist
+  if(node_iterator == _lru_index.end())
     return false;
 
   node_iterator->second.get().value = value;
@@ -101,7 +103,7 @@ void SimpleLRU::AddNewNode(const std::string &key, const std::string &value) {
   _lru_tail->prev = new_node;
 
   _cur_size += key.size() + value.size();
-  _lru_index.insert({_lru_tail->key, *_lru_tail});
+  _lru_index.insert({_lru_tail->prev->key, *_lru_tail->prev});
 }
 
 void SimpleLRU::MoveToTail(
