@@ -8,10 +8,20 @@ bool SimpleLRU::Put(const std::string &key, const std::string &value) {
   // Make sure there is enough memory in List
   if (key.size() + value.size() > _max_size)
     return false;
-  while(_cur_size > _max_size)
-    // Take key of node previous to head
-    // beacause head is a dummy node
-    Delete(_lru_head->next->key);
+  while(_cur_size > _max_size) {
+    lru_node *node_to_del = _lru_head->next.get();
+
+    _lru_index.erase(node_to_del->key);
+    _cur_size -= node_to_del->key.size() + node_to_del->value.size();
+
+    // Rearrange pointers as if there was no node that we are deleting in the list
+    node_to_del->next->prev = node_to_del->prev;
+    std::swap(node_to_del->prev->next, node_to_del->next);
+
+    // Delete node
+    // by resetting unique pointer corresponding to it
+    node_to_del->next.reset();
+  }
 
   auto node_iterator = _lru_index.find(key);
 
