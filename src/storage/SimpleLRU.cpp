@@ -9,7 +9,9 @@ bool SimpleLRU::Put(const std::string &key, const std::string &value) {
   if (key.size() + value.size() > _max_size)
     return false;
   while(_cur_size > _max_size)
-    Delete(_lru_head->key);
+    // Take key of node previous to head
+    // beacause head is a dummy node
+    Delete(_lru_head->next->key);
 
   auto node_iterator = _lru_index.find(key);
 
@@ -110,7 +112,7 @@ void SimpleLRU::MoveToTail(
   std::map<std::reference_wrapper<const std::string>, std::reference_wrapper<lru_node>>::iterator node_iterator) {
     lru_node &node_to_move = node_iterator->second;
 
-    if (_lru_tail->key == node_to_move.key)
+    if (_lru_tail->prev->key == node_to_move.key)
         return;
 
     // Rearrange pointers as if there was no node that we are moving in the list
