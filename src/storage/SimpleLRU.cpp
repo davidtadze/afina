@@ -8,7 +8,7 @@ bool SimpleLRU::Put(const std::string &key, const std::string &value) {
   // Make sure there is enough memory in List
   if (key.size() + value.size() > _max_size)
     return false;
-  while(_cur_size > _max_size) {
+  while (_cur_size + key.size() + value.size() > _max_size) {
     lru_node *node_to_del = _lru_head->next.get();
 
     _lru_index.erase(node_to_del->key);
