@@ -87,13 +87,6 @@ void ServerImpl::Start(uint16_t port, uint32_t n_accept, uint32_t n_workers) {
 void ServerImpl::Stop() {
     running.store(false);
     shutdown(_server_socket, SHUT_RDWR);
-}
-
-// See Server.h
-void ServerImpl::Join() {
-    assert(_thread.joinable());
-    _thread.join();
-    close(_server_socket);
 
     for (int client_socket : _client_sockets)
         shutdown(client_socket, SHUT_RD);
@@ -101,6 +94,14 @@ void ServerImpl::Join() {
     static std::mutex m;
     std::unique_lock<std::mutex> lk(m);
     _active_workers.wait(lk, [this] { return this->_workers == 0; });
+}
+
+// See Server.h
+void ServerImpl::Join() {
+    assert(_thread.joinable());
+
+    Stop();
+    _thread.join();
 }
 
 // See Server.h
