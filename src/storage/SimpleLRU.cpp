@@ -6,22 +6,8 @@ namespace Backend {
 // See MapBasedGlobalLockImpl.h
 bool SimpleLRU::Put(const std::string &key, const std::string &value) {
   // Make sure there is enough memory in List
-  if (key.size() + value.size() > _max_size)
+  if(!CleanUpSpace(key.size() + value.size()))
     return false;
-  while (_cur_size + key.size() + value.size() > _max_size) {
-    lru_node *node_to_del = _lru_head->next.get();
-
-    _lru_index.erase(node_to_del->key);
-    _cur_size -= node_to_del->key.size() + node_to_del->value.size();
-
-    // Rearrange pointers as if there was no node that we are deleting in the list
-    node_to_del->next->prev = node_to_del->prev;
-    std::swap(node_to_del->prev->next, node_to_del->next);
-
-    // Delete node
-    // by resetting unique pointer corresponding to it
-    node_to_del->next.reset();
-  }
 
   auto node_iterator = _lru_index.find(key);
 
@@ -37,13 +23,15 @@ bool SimpleLRU::Put(const std::string &key, const std::string &value) {
   else {
     AddNewNode(key, value);
   }
-
   return true;
  }
 
 // See MapBasedGlobalLockImpl.h
 bool SimpleLRU::PutIfAbsent(const std::string &key, const std::string &value) {
   if(_lru_index.find(key) != _lru_index.end())
+    return false;
+
+  if(!CleanUpSpace(key.size() + value.size()))
     return false;
 
   AddNewNode(key, value);
@@ -56,6 +44,9 @@ bool SimpleLRU::Set(const std::string &key, const std::string &value) {
 
   // Key doesnt exist
   if(node_iterator == _lru_index.end())
+    return false;
+
+  if(!CleanUpSpace(value.size()))
     return false;
 
   node_iterator->second.get().value = value;
@@ -118,8 +109,7 @@ void SimpleLRU::AddNewNode(const std::string &key, const std::string &value) {
   _lru_index.insert({_lru_tail->prev->key, *_lru_tail->prev});
 }
 
-void SimpleLRU::MoveToTail(
-  std::map<std::reference_wrapper<const std::string>, std::reference_wrapper<lru_node>>::iterator node_iterator) {
+void SimpleLRU::MoveToTail(ListIndex::iterator node_iterator) {
     lru_node &node_to_move = node_iterator->second;
 
     if (_lru_tail->prev->key == node_to_move.key)
@@ -134,6 +124,27 @@ void SimpleLRU::MoveToTail(
     std::swap(_lru_tail->prev->next, node_to_move.next);
 
     _lru_tail->prev = &node_to_move;
+}
+
+bool SimpleLRU::CleanUpSpace(std::size_t needed_space) {
+  if (needed_space > _max_size)
+    return false;
+
+  while (_cur_size + needed_space > _max_size) {
+    lru_node *node_to_del = _lru_head->next.get();
+
+    _lru_index.erase(node_to_del->key);
+    _cur_size -= node_to_del->key.size() + node_to_del->value.size();
+
+    // Rearrange pointers as if there was no node that we are deleting in the list
+    node_to_del->next->prev = node_to_del->prev;
+    std::swap(node_to_del->prev->next, node_to_del->next);
+
+    // Delete node
+    // by resetting unique pointer corresponding to it
+    node_to_del->next.reset();
+  }
+  return true;
 }
 
 } // namespace Backend

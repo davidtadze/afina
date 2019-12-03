@@ -74,8 +74,10 @@ private:
     lru_node* _lru_tail;
     std::unique_ptr<lru_node> _lru_head;
 
+    typedef std::map<std::reference_wrapper<const std::string>, std::reference_wrapper<lru_node>, std::less<std::string>>
+      lru_index;
     // Index of nodes from list above, allows fast random access to elements by lru_node#key
-    std::map<std::reference_wrapper<const std::string>, std::reference_wrapper<lru_node>, std::less<std::string>> _lru_index;
+     lru_index _lru_index;
 
     // Add new node to the list and insert it at tail
     void AddNewNode(const std::string &key, const std::string &value);
@@ -84,6 +86,9 @@ private:
     // i.e. make the most "fresh"
     void MoveToTail(
       std::map<std::reference_wrapper<const std::string>, std::reference_wrapper<lru_node>>::iterator node_iterator);
+
+    // Clean up space until there is enough for new node/value
+    bool CleanUpSpace(std::size_t needed_space);
 };
 
 } // namespace Backend
