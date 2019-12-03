@@ -30,11 +30,11 @@ public:
 
     /**
      * Signal all worker threads that server is going to shutdown. After method returns
-     * no more connections should be accept, existing connections should stop receive commands,
-     * but must wait until currently run commands executed.
+     * no more connections should be accepted, existing connections should stop receiving commands,
+     * but must wait until currently runing commands are executed.
      *
      * After existing connections drain each should be closed and once worker has no more connection
-     * its thread should be exit
+     * its thread should be exited
      */
     virtual void Stop() = 0;
 
@@ -46,7 +46,7 @@ public:
 
 protected:
     /**
-     * Instance of backing storeage on which current server should execute
+     * Instance of backing storage on which current server should execute
      * each command
      */
     std::shared_ptr<Afina::Storage> pStorage;

@@ -15,7 +15,7 @@
 namespace Afina {
 namespace Protocol {
 
-// See Parse.h
+// See Parser.h
 bool Parser::Parse(const char *input, const size_t size, size_t &parsed) {
     size_t pos;
     parsed = 0;
