@@ -28,7 +28,7 @@ class Executor {
         kStopped
     };
 
-    Executor(std::string name, int size);
+    Executor(int low_watermark, int high_watermark, int max_queue_size, int idle_time);
     ~Executor();
 
     /**
@@ -84,7 +84,7 @@ private:
     std::condition_variable empty_condition;
 
     /**
-     * Vector of actual threads that perorm execution
+     * Vector of actual threads that perform execution
      */
     std::vector<std::thread> threads;
 
@@ -97,6 +97,11 @@ private:
      * Flag to stop bg threads
      */
     State state;
+
+    int low_watermark;
+    int high_watermark;
+    int max_queue_size;
+    int idle_time;
 };
 
 } // namespace Concurrency
