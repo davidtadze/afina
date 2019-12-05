@@ -27,6 +27,9 @@ Executor::~Executor() {
  * In case if await flag is true, call won't return until all background jobs are done and all threads are stopped
  */
 void Executor::Stop(bool await) {
+  if(state == State::kStopped)
+    return;
+
   {
     std::unique_lock<std::mutex> lock(mutex);
     state = State::kStopping;
@@ -51,7 +54,13 @@ void perform(Executor *executor) {
     {
       std::unique_lock<std::mutex> lock(executor->mutex);
 
-      executor->empty_condition.wait(lock, !executor->tasks.empty() || executor->state == Executor::State::kStopping);
+      while (executor->tasks.empty() && executor->state == Executor::State::kRun) {
+        if (executor->empty_condition.wait_for(lock, std::chrono::milliseconds(executor->idle_time))
+              == std::cv_status::timeout) {
+          executor->empty_condition.wait(lock);
+        }
+      }
+
       task = executor->tasks.front();
       executor->tasks.pop_front();
     }
