@@ -12,6 +12,9 @@
 namespace Afina {
 namespace Concurrency {
 
+class Executor;
+void perform(Executor *executor);
+
 /**
  * # Thread pool
  */
@@ -28,7 +31,9 @@ class Executor {
         kStopped
     };
 
-    public Executor(int low_watermark, int high_watermark, int max_queue_size, int idle_time);
+    public:
+
+    Executor(int low_watermark, int high_watermark, int max_queue_size, int idle_time);
     ~Executor();
 
     /**
@@ -57,7 +62,7 @@ class Executor {
 
         // Enqueue new task
         tasks.push_back(exec);
-        if (available_threads == 0 && threads.size() < high_watermark) {
+        if (excess_threads == 0 && threads.size() < high_watermark) {
             threads.push_back(std::thread(&perform, this));
         }
         empty_condition.notify_one();
