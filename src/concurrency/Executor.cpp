@@ -37,6 +37,11 @@ void Executor::Stop(bool await) {
 
   empty_condition.notify_all();
 
+  if(await) {
+    std::unique_lock<std::mutex> lock(mutex);
+    finished_condition.wait(lock, [this](){ return tasks.empty() && (busy_threads == 0); });
+  }
+
   for(std::thread &every_thread : threads) {
     every_thread.join();
   }
@@ -61,10 +66,18 @@ void perform(Executor *executor) {
         }
       }
 
+      ++executor->busy_threads;
       task = executor->tasks.front();
       executor->tasks.pop_front();
     }
+
     task();
+    
+    {
+      std::unique_lock<std::mutex> lock(executor->mutex);
+      --executor->busy_threads;
+      executor->finished_condition.notify_one();
+    }
   }
 }
 
