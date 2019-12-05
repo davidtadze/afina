@@ -51,12 +51,15 @@ class Executor {
         auto exec = std::bind(std::forward<F>(func), std::forward<Types>(args)...);
 
         std::unique_lock<std::mutex> lock(this->mutex);
-        if (state != State::kRun) {
+        if (state != State::kRun || tasks.size() >= max_queue_size) {
             return false;
         }
 
         // Enqueue new task
         tasks.push_back(exec);
+        if (available_threads == 0 && threads.size() < high_watermark) {
+            threads.push_back(std::thread(&perform, this));
+        }
         empty_condition.notify_one();
         return true;
     }
@@ -73,6 +76,8 @@ private:
      */
     friend void perform(Executor *executor);
 
+    void kill_thread();
+
     /**
      * Mutex to protect state below from concurrent modification
      */
@@ -82,6 +87,11 @@ private:
      * Conditional variable to await new data in case of empty queue
      */
     std::condition_variable empty_condition;
+
+    /**
+     * Conditional variable to wait until every worker finishes its job
+     */
+    std::condition_variable finished_condition;
 
     /**
      * Vector of actual threads that perform execution
@@ -102,6 +112,8 @@ private:
     int high_watermark;
     int max_queue_size;
     int idle_time;
+    int busy_threads = 0;
+    int available_threads = 0;
 };
 
 } // namespace Concurrency
