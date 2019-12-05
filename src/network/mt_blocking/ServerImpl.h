@@ -7,6 +7,7 @@
 #include <set>
 
 #include <afina/network/Server.h>
+#include <afina/concurrency/Executor.h>
 
 namespace spdlog {
 class logger;
@@ -64,6 +65,8 @@ private:
     // Set of all active sockets
     std::set<int> _client_sockets;
     std::mutex _client_sockets_mutex;
+
+    Afina::Concurrency::Executor _executor;
 
     void ProcessConnection(int client_socket);
 };

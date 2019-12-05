@@ -28,7 +28,7 @@ class Executor {
         kStopped
     };
 
-    Executor(int low_watermark, int high_watermark, int max_queue_size, int idle_time);
+    public Executor(int low_watermark, int high_watermark, int max_queue_size, int idle_time);
     ~Executor();
 
     /**
@@ -113,7 +113,7 @@ private:
     int max_queue_size;
     int idle_time;
     int busy_threads = 0;
-    int available_threads = 0;
+    int excess_threads = 0;
 };
 
 } // namespace Concurrency

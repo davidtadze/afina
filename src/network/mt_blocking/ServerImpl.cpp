@@ -28,7 +28,9 @@ namespace Network {
 namespace MTblocking {
 
 // See Server.h
-ServerImpl::ServerImpl(std::shared_ptr<Afina::Storage> ps, std::shared_ptr<Logging::Service> pl) : Server(ps, pl) {}
+ServerImpl::ServerImpl(std::shared_ptr<Afina::Storage> ps, std::shared_ptr<Logging::Service> pl) :
+  Server(ps, pl),
+  _executor(1, _max_workers, 10, 2000) {}
 
 // See Server.h
 ServerImpl::~ServerImpl() {}
@@ -100,7 +102,8 @@ void ServerImpl::Stop() {
 void ServerImpl::Join() {
     assert(_thread.joinable());
 
-    Stop();
+    _executor.Stop(true);
+    //Stop();
     _thread.join();
 }
 
@@ -142,22 +145,26 @@ void ServerImpl::OnRun() {
         // Proccess new connection
         // - if parallel connections limit is not reached, start a new worker
         // - if limit is reached, send error message and close connection
-        if (_workers < _max_workers) {
-            ++_workers;
-            std::thread(&ServerImpl::ProcessConnection, this, client_socket).detach();
-
-            {
-                std::lock_guard<std::mutex> lg(_client_sockets_mutex);
-                _client_sockets.insert(client_socket);
-            }
-        }
-        else {
-            static const std::string msg = "Maximum number of connections reached, closing connection...";
-            if (send(client_socket, msg.data(), msg.size(), 0) <= 0) {
-                _logger->error("Failed to write response to client: {}", strerror(errno));
-            }
+        if (!_executor.Execute(&ServerImpl::ProcessConnection, this, client_socket)) {
             close(client_socket);
         }
+
+        // if (_workers < _max_workers) {
+        //     ++_workers;
+        //     std::thread(&ServerImpl::ProcessConnection, this, client_socket).detach();
+        //
+        //     {
+        //         std::lock_guard<std::mutex> lg(_client_sockets_mutex);
+        //         _client_sockets.insert(client_socket);
+        //     }
+        // }
+        // else {
+        //     static const std::string msg = "Maximum number of connections reached, closing connection...";
+        //     if (send(client_socket, msg.data(), msg.size(), 0) <= 0) {
+        //         _logger->error("Failed to write response to client: {}", strerror(errno));
+        //     }
+        //     close(client_socket);
+        // }
     }
 
     // Cleanup on exit...
