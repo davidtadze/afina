@@ -8,7 +8,7 @@
 
 namespace Afina {
 namespace Network {
-namespace STnonblock {
+namespace MTnonblock {
 
 // See Connection.h
 void Connection::Start() {
